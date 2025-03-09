@@ -1,11 +1,10 @@
 import requests
 import socket
-import subprocess
+import speedtest
 from rich import print
 from rich.panel import Panel
 from rich.live import Live
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.spinner import Spinner
 
 # Checks if there is an internet connection
 def checkConnection():
@@ -32,101 +31,57 @@ def getPublicIp():
         public_ip = "Error"
     return public_ip
 
+# Handles speed test UI
+def getSpeedTestPanel(ping, download_speed, upload_speed, status):
+    pingString = f"Ping: [bold green]{ping} ms[/bold green]"
+    downloadString = f"Download Speed: [bold green]{download_speed} Mbps[/bold green]"
+    uploadString = f"Upload Speed: [bold green]{upload_speed} Mbps[/bold green]"
+    statusString = f"Status: [bold yellow]{status}[/bold yellow]"
+
+    bgColor = "blue"
+
+    if ping == None:
+        pingString = f"Ping: [bold red]Loading...[/bold red]"
+    if download_speed == None:
+        downloadString = f"Download Speed: [bold red]Loading...[/bold red]"
+    if upload_speed == None:
+        uploadString = f"Upload Speed: [bold red]Loading...[/bold red]"
+
+    if status == "Complete":
+        bgColor = "green"
+        statusString = f"Status: [bold green]Complete[/bold green]"
+        
+    return Panel(
+        statusString + "\n" + "\n" + pingString + "\n" + downloadString + "\n" + uploadString,
+        title="Network Speed Test",
+        border_style=bgColor
+    )
+
 # Performs a network speed test with live updates
-def runSpeedTest():
-    # Create a table for results
-    table = Table(title="Network Speed Test Results")
-    table.add_column("Test", style="cyan")
-    table.add_column("Speed", style="green")
-    
-    # Create progress displays
-    download_progress = Progress(
-        SpinnerColumn(),
-        TextColumn("[bold green]Testing download speed...[/bold green]"),
-        transient=True
-    )
-    
-    upload_progress = Progress(
-        SpinnerColumn(),
-        TextColumn("[bold green]Testing upload speed...[/bold green]"),
-        transient=True
-    )
-    
+def runSpeedTest(): 
     try:
-        # Run speedtest-cli to get server information
-        print("[bold yellow]Finding best server...[/bold yellow]")
-        server_result = subprocess.run(
-            ["speedtest-cli", "--list"],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        print("[bold green]Server found![/bold green]")
-        
-        # Test download speed with live updates
-        with Live(download_progress) as live:
-            download_task = download_progress.add_task("download", total=None)
-            download_result = subprocess.run(
-                ["speedtest-cli", "--no-upload", "--simple"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            download_progress.update(download_task, completed=True)
-        
-        # Parse download result
-        download_output = download_result.stdout
-        download_speed = None
-        for line in download_output.splitlines():
-            if "Download" in line:
-                download_speed = float(line.split(":")[1].strip().split(" ")[0])
-                break
-        
-        # Test upload speed with live updates
-        with Live(upload_progress) as live:
-            upload_task = upload_progress.add_task("upload", total=None)
-            upload_result = subprocess.run(
-                ["speedtest-cli", "--no-download", "--simple"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            upload_progress.update(upload_task, completed=True)
-        
-        # Parse upload result
-        upload_output = upload_result.stdout
-        upload_speed = None
-        ping = None
-        for line in upload_output.splitlines():
-            if "Upload" in line:
-                upload_speed = float(line.split(":")[1].strip().split(" ")[0])
-            if "Ping" in line:
-                ping = float(line.split(":")[1].strip().split(" ")[0])
-        
-        # Add results to the table
-        if download_speed is not None:
-            table.add_row("Download", f"[bold green]{download_speed:.2f} Mbps[/bold green]")
-        else:
-            table.add_row("Download", "[bold red]Failed to get download speed[/bold red]")
+        st = speedtest.Speedtest()
+        st.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+
+        with Live(getSpeedTestPanel(None, None, None, "Testing Ping..."), refresh_per_second=4) as live:
+            st.get_best_server()
+            ping = f"{st.results.ping:.2f}"
+            livePanel = getSpeedTestPanel(ping, None, None, "Testing Download...")
+            live.update(livePanel)
+
+            download_speed = f"{(st.download() / 1_000_000):.2f}"
+            livePanel = getSpeedTestPanel(ping, download_speed, None, "Testing Upload...")
+            live.update(livePanel)
             
-        if upload_speed is not None:
-            table.add_row("Upload", f"[bold green]{upload_speed:.2f} Mbps[/bold green]")
-        else:
-            table.add_row("Upload", "[bold red]Failed to get upload speed[/bold red]")
-            
-        if ping is not None:
-            table.add_row("Ping", f"[bold green]{ping:.2f} ms[/bold green]")
-        else:
-            table.add_row("Ping", "[bold red]Failed to get ping[/bold red]")
-        
-    except subprocess.CalledProcessError as e:
-        print(f"[bold red]Error running speed test: {e}[/bold red]")
-        table.add_row("Error", f"[bold red]Failed to run speed test[/bold red]")
+            upload_speed = f"{(st.upload() / 1_000_000):.2f}"
+            livePanel = getSpeedTestPanel(ping, download_speed, upload_speed, "Complete")
+            live.update(livePanel)
     except Exception as e:
-        print(f"[bold red]Unexpected error: {e}[/bold red]")
-        table.add_row("Error", f"[bold red]{str(e)}[/bold red]")
-    
-    return table
+        errorPanel = Panel(f"Error: [bold red]{e}[/bold red]", title="Network Speed Test", border_style="red")
+        print(errorPanel)
+
+        if e.args[0] == "HTTP Error 403: Forbidden":
+            print("Server is busy, please try again later.")
 
 # Main function
 def main():
@@ -144,9 +99,9 @@ def main():
         border_style="green"
     )
     print(ipPanel)
-    
-    speed_table = runSpeedTest()
-    print(speed_table)
+
+    # Run speed test
+    runSpeedTest()
 
 if __name__ == "__main__":
     main()
