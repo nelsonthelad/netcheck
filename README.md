@@ -33,7 +33,6 @@ $ netcheck
 
 The following dependencies will be automatically installed:
 - requests
-- speedtest-cli
 - rich
 
 ## Uninstallation

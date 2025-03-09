@@ -1,8 +1,6 @@
 import requests
 import socket
-import warnings
-warnings.filterwarnings('ignore', message='The file speedtest_cli.py has been deprecated')
-from speedtest_cli import Speedtest
+from netcheck import speedtest
 from rich import print
 from rich.panel import Panel
 from rich.live import Live
@@ -61,7 +59,7 @@ def getSpeedTestPanel(ping, download_speed, upload_speed, status):
 # Performs a network speed test with live updates
 def runSpeedTest(): 
     try:
-        st = Speedtest()
+        st = speedtest.Speedtest()
         st.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
         with Live(getSpeedTestPanel(None, None, None, "Testing Ping..."), refresh_per_second=4) as live:
