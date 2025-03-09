@@ -10,7 +10,7 @@ A shell command for network speed and information. This tool allows you to quick
 ## Installation
 
 ```bash
-$ git clone https://github.com/yourusername/netcheck.git
+$ git clone https://github.com/nelsonthelad/netcheck.git
 ```
 
 ```bash
