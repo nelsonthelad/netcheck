@@ -7,7 +7,7 @@ setup(
     install_requires=[
         "requests",
         "speedtest-cli",
-        "rich",
+        "rich"
     ],
     entry_points={
         "console_scripts": [
