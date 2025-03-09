@@ -10,12 +10,15 @@ A shell command for network speed and information. This tool allows you to quick
 ## Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/netcheck.git
-cd netcheck
+$ git clone https://github.com/yourusername/netcheck.git
+```
 
-# Install the Package
-pip install .
+```bash
+$ cd netcheck
+```
+
+```bash
+$ pip install -e .
 ```
 
 ## Usage
@@ -23,7 +26,7 @@ pip install .
 Once installed, you can run the tool from anywhere:
 
 ```bash
-netcheck
+$ netcheck
 ```
 
 ## Requirements
@@ -38,5 +41,5 @@ The following dependencies will be automatically installed:
 To uninstall the package:
 
 ```bash
-pip uninstall netcheck
+$ pip uninstall netcheck
 ``` 
